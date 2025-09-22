@@ -1,0 +1,199 @@
+{% extends "student/base_student.html" %}
+{% block title %}My Results{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="fw-bold mb-4 text-center text-gradient">🚀 My Performance Dashboard</h2>
+
+  <!-- Tabs -->
+  <ul class="nav nav-pills justify-content-center mb-4" id="resultsTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="quizzes-tab" data-bs-toggle="tab" data-bs-target="#quizzes" type="button" role="tab">
+        <i class="fas fa-question-circle me-1"></i> Quizzes
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments" type="button" role="tab">
+        <i class="fas fa-tasks me-1"></i> Assignments
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="exams-tab" data-bs-toggle="tab" data-bs-target="#exams" type="button" role="tab">
+        <i class="fas fa-graduation-cap me-1"></i> Exams
+      </button>
+    </li>
+  </ul>
+
+  <!-- Tab Content -->
+  <div class="tab-content futuristic-card p-4 rounded-4 shadow-lg">
+    
+    <!-- Quizzes -->
+    <div class="tab-pane fade show active" id="quizzes" role="tabpanel">
+      {% if quiz_results %}
+        <div class="row g-3">
+          {% for r in quiz_results %}
+          <div class="col-md-6 col-lg-4">
+            <div class="result-card h-100">
+              <h5 class="fw-bold mb-1">{{ r.quiz.title }}</h5>
+              <p class="mb-2 small text-muted"><i class="fas fa-book me-1"></i>{{ r.quiz.subject }}</p>
+
+              <div class="progress mb-2" role="progressbar"
+                   aria-valuemin="0"
+                   aria-valuemax="100"
+                   aria-label="Score progress">
+                <div
+                  class="progress-bar {% if r.score is not none and r.score >= 70 %}bg-success{% elif r.score is not none and r.score >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
+                  role="presentation"
+                  data-score="{{ r.score if r.score is not none else 0 }}"
+                  aria-valuenow="{{ r.score if r.score is not none else 0 }}">
+                  <span class="progress-text">
+                    {% if r.score is not none %}{{ r.score }}%{% else %}N/A{% endif %}
+                  </span>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center small text-muted">
+                <div>Submitted</div>
+                <div>{{ r.submitted_at.strftime('%d %B %Y') }}</div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-center text-muted">No quiz results yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Assignments -->
+    <div class="tab-pane fade" id="assignments" role="tabpanel">
+      {% if assignments %}
+        <div class="list-group futuristic-list">
+          {% for a in assignments %}
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="fw-bold mb-0">{{ a.title }}</h6>
+              <small class="text-muted"><i class="fas fa-book me-1"></i> {{ a.course_name }}</small>
+            </div>
+            <span class="badge bg-gradient">{{ a.due_date.strftime('%d %B %Y') }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-center text-muted">No assignments available.</p>
+      {% endif %}
+    </div>
+
+    <!-- Exams -->
+    <div class="tab-pane fade" id="exams" role="tabpanel">
+      {% if exam_results %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle futuristic-table">
+            <thead>
+              <tr>
+                <th>Subject</th>
+                <th>Title</th>
+                <th>Set</th>
+                <th>Score</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in exam_results %}
+              <tr>
+                <td>{{ e.exam.subject }}</td>
+                <td>{{ e.exam.title }}</td>
+                <td>{{ e.set_name or "N/A" }}</td>
+                <td>
+                  {% if e.score is none %}
+                    N/A / {{ e.max_score|float|round(2) }}
+                  {% else %}
+                    {{ e.score }} / {{ e.max_score|float|round(2) }}
+                  {% endif %}
+                </td>
+                <td>{{ e.submitted_at.strftime('%d %B %Y') if e.submitted_at else '—' }}</td>
+                <td>
+                  {% if e.score is not none %}
+                    {% if e.max_score > 0 and e.score >= (e.max_score * 0.5) %}
+                      <span class="badge bg-success">Passed</span>
+                    {% else %}
+                      <span class="badge bg-danger">Failed</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Not scored</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-center text-muted">No exam results available.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Custom CSS (kept inline for quick drop-in; you can move to an external file to completely silence editors) -->
+<style>
+.text-gradient {
+  background: linear-gradient(45deg, #00f2fe, #4facfe);
+  background-clip: text;               /* standard */
+  -webkit-background-clip: text;       /* webkit */
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.futuristic-card {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.result-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border-radius: 12px;
+  padding: 14px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.result-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 30px rgba(10, 20, 30, 0.18);
+}
+.futuristic-list .list-group-item {
+  background: rgba(255,255,255,0.02);
+  border: none;
+  color: #fff;
+}
+.bg-gradient {
+  background: linear-gradient(45deg, #4facfe, #00f2fe);
+  color: white;
+}
+.futuristic-table th {
+  background: linear-gradient(45deg, #00f2fe, #4facfe);
+  color: white;
+}
+/* small helpers */
+.progress { height: 18px; border-radius: 10px; overflow: hidden; }
+.progress .progress-bar { display: flex; align-items: center; justify-content: center; font-weight:700; }
+.progress-text { padding: 0 6px; font-size: .9rem; color: #0b1220; }
+</style>
+
+<!-- Small JS to set progress widths from data attributes (avoids inline Jinja in CSS) -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.progress-bar[data-score]').forEach(function(bar){
+    var scoreRaw = bar.getAttribute('data-score');
+    var score = 0;
+    if (scoreRaw !== null && scoreRaw !== '') {
+      var n = Number(scoreRaw);
+      if (!Number.isNaN(n)) score = Math.max(0, Math.min(100, Math.round(n)));
+    }
+    bar.style.width = score + '%';
+    bar.setAttribute('aria-valuenow', String(score));
+    var txt = bar.querySelector('.progress-text');
+    if (txt) txt.textContent = (score > 0 ? (score + '%') : (bar.getAttribute('data-score') === '0' ? '0%' : 'N/A'));
+  });
+});
+</script>
+{% endblock %}
