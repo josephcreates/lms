@@ -1,0 +1,147 @@
+{% extends "parent/base_parent.html" %}
+{% block title %}Parent Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+
+  <!-- Header -->
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-start mb-4">
+    <div>
+      <h1 class="h3">Welcome back, {{ current_user.first_name }} 👋</h1>
+      <p class="text-muted">Here’s an overview of your children and recent updates.</p>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="d-flex flex-wrap gap-3">
+      <div class="stat-card">
+        <div class="stat-label">Children</div>
+        <div class="stat-value">{{ total_children }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Unread Notifications</div>
+        <div class="stat-value">{{ unread_notifications_count or 0 }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Upcoming Items</div>
+        <div class="stat-value">{{ upcoming_count or 0 }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search & actions -->
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div class="input-group shadow-sm">
+        <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+        <input id="childSearch" class="form-control" placeholder="Search by name or class..." type="search">
+      </div>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+      <a href="{{ url_for('parent.view_children') }}" class="btn btn-primary btn-sm">+ Link Child</a>
+      <a href="{{ url_for('parent.reports_list') }}" class="btn btn-outline-secondary btn-sm">Pending Requests</a>
+    </div>
+  </div>
+
+  <!-- Children -->
+  {% if children %}
+  <div id="childrenGrid" class="row g-4">
+    {% for student_profile, user in children %}
+    <div class="col-12 col-sm-6 col-lg-4 child-card"
+         data-name="{{ user.full_name | lower }}"
+         data-class="{{ (student_profile.current_class or '') | lower }}">
+
+      <div class="card shadow-sm h-100">
+        <div class="card-body d-flex gap-3 align-items-center">
+          <!-- Avatar -->
+          <div>
+            <img src="{{ user.profile_picture_url }}"
+                 alt="{{ user.full_name }}"
+                 class="rounded-circle border"
+                 style="width:70px; height:70px; object-fit:cover;">
+          </div>
+
+          <!-- Info -->
+          <div class="flex-grow-1">
+            <h5 class="mb-1">{{ user.full_name }}</h5>
+            <div class="small text-muted">
+              {{ student_profile.current_class or 'No class assigned' }} • ID: {{ student_profile.id }}
+            </div>
+            <div class="mt-2 small">
+              <span class="text-muted">Age:</span>
+              <strong>
+                {% if student_profile.dob %}
+                  {{ ((utcnow().date() - student_profile.dob).days // 365) }} yrs
+                {% else %}
+                  N/A
+                {% endif %}
+              </strong>
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div>
+            <span class="badge {% if not student_profile.is_graduated %}bg-success{% else %}bg-secondary{% endif %}">
+              {{ "Active" if not student_profile.is_graduated else "Graduated" }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card-footer bg-white d-flex justify-content-between">
+          <div class="btn-group btn-group-sm" role="group">
+            <a class="btn btn-outline-primary" href="{{ url_for('parent.view_child_detail', child_id=student_profile.id) }}">Profile</a>
+            <a class="btn btn-outline-success" href="{{ url_for('parent.view_student_report', child_id=student_profile.id) }}">Reports</a>
+            <a class="btn btn-outline-warning" href="{{ url_for('parent.view_attendance', child_id=student_profile.id) }}">Attendance</a>
+          </div>
+          <small class="text-muted">
+            <i class="fas fa-bell"></i> {{ student_profile.notifications_count or 0 }}
+          </small>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-info">
+    No children linked to your account.
+    <a href="{{ url_for('parent.link_child') }}">Link a child</a> to get started.
+  </div>
+  {% endif %}
+</div>
+
+<!-- Search filter -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('childSearch');
+  if (!input) return;
+  input.addEventListener('input', function () {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#childrenGrid .child-card').forEach(card => {
+      const name = card.dataset.name || '';
+      const cls = card.dataset.class || '';
+      card.style.display = !q || name.includes(q) || cls.includes(q) ? '' : 'none';
+    });
+  });
+});
+</script>
+
+<style>
+.stat-card {
+  min-width: 130px;
+  padding: .75rem;
+  background: #fff;
+  border-radius: .5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+  text-align: center;
+}
+.stat-label {
+  font-size: .8rem;
+  color: #6c757d;
+}
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2b2d42;
+}
+</style>
+{% endblock %}

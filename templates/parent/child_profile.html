@@ -1,0 +1,29 @@
+{% extends "parent/layout.html" %}
+{% block title %}Child Profile{% endblock %}
+
+{% block content %}
+<h3 class="mb-4"><i class="fas fa-user-graduate me-2"></i> My Children</h3>
+
+{% if children %}
+  <div class="row">
+    {% for child in children %}
+      <div class="col-md-6 mb-4">
+        <div class="card shadow">
+          <div class="card-body">
+            <h5 class="card-title">{{ child.user.full_name }}</h5>
+            <p class="card-text">
+              <strong>Class:</strong> {{ child.current_class }}<br>
+              <strong>Academic Year:</strong> {{ child.academic_year }}<br>
+              <strong>DOB:</strong> {{ child.dob.strftime('%Y-%m-%d') if child.dob else 'N/A' }}<br>
+              <strong>Gender:</strong> {{ child.gender or 'N/A' }}<br>
+              <strong>Blood Group:</strong> {{ child.blood_group or 'N/A' }}
+            </p>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-info">No child profiles linked to your account.</div>
+{% endif %}
+{% endblock %}

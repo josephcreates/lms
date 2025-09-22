@@ -1,0 +1,63 @@
+{% extends "parent/base_parent.html" %}
+
+{% block title %}My Children{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+  <h2 class="mt-4 mb-4">My Children</h2>
+
+  {% if children %}
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for child in children %}
+    <div class="col">
+      <div class="card h-100 shadow-sm border-top border-4" style="border-top-color: #7b2cbf; transition: transform 0.2s, box-shadow 0.2s;">
+        <div class="card-body text-center">
+          <i class="fas fa-child fa-3x mb-3" style="color: #7b2cbf;"></i>
+          <h5 class="card-title">{{ child.first_name }} {{ child.last_name }}</h5>
+          
+          <p class="card-text mb-1">
+            <span class="badge bg-primary">
+              Class: {{ child.student_profile.current_class if child.student_profile else 'Not assigned' }}
+            </span>
+          </p>
+          <p class="card-text mb-3">
+            <span class="badge bg-secondary">
+              Year: {{ child.student_profile.academic_year if child.student_profile else 'N/A' }}
+            </span>
+          </p>
+
+          <div class="d-flex flex-column gap-2">
+            <a href="{{ url_for('parent.parent_pay_fees', student_id=child.id) }}" class="btn btn-outline-primary">
+              Pay Fees
+            </a>
+            <a href="{{ url_for('parent.view_student_report', child_id=child.id) }}" class="btn btn-outline-secondary">
+              View Reports
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-info">
+    No children linked to your account yet.
+  </div>
+  {% endif %}
+
+  <a href="{{ url_for('parent.dashboard') }}" class="btn btn-secondary mt-4">Back to Dashboard</a>
+
+</div>
+
+<style>
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+.badge {
+  font-size: 0.9rem;
+  padding: 0.4em 0.6em;
+}
+</style>
+{% endblock %}
