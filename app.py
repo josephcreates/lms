@@ -1,12 +1,10 @@
 from datetime import datetime
 import os
-import sys, uuid, threading, webbrowser
 from flask import Flask, current_app, render_template, redirect, url_for, flash, request, abort, jsonify, send_from_directory
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf.csrf import CSRFProtect, generate_csrf
-from flaskwebgui import FlaskUI
 from datetime import datetime, timedelta
 from utils.helpers import get_class_choices
 from utils.extensions import db, mail
