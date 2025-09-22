@@ -1,0 +1,181 @@
+{% extends 'admin/layout.html' %}
+{% block title %}Add Quiz | Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card shadow-lg border-0">
+    <!-- Gradient Header -->
+    <div class="card-header d-flex justify-content-between align-items-center text-white"
+         style="background: linear-gradient(90deg, #4e73df, #1cc88a);">
+      <h3 class="mb-0"><i class="fas fa-question-circle"></i> Create New Quiz</h3>
+      <!-- Live Counter -->
+      <span class="badge bg-warning text-dark fs-6" id="question-counter">Questions: 0</span>
+    </div>
+
+    <div class="card-body">
+      <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <!-- Subject -->
+        <div class="mb-3">
+          <label class="form-label fw-bold"><i class="fas fa-book text-info"></i> {{ form.subject.label }}</label>
+          {{ form.subject(class="form-control", placeholder="Enter subject") }}
+        </div>
+
+        <!-- Title -->
+        <div class="mb-3">
+          <label class="form-label fw-bold"><i class="fas fa-heading text-primary"></i> {{ form.title.label }}</label>
+          {{ form.title(class="form-control", placeholder="Quiz title") }}
+        </div>
+
+        <!-- Class -->
+        <div class="mb-3">
+          <label class="form-label fw-bold"><i class="fas fa-users text-warning"></i> {{ form.assigned_class.label }}</label>
+          {{ form.assigned_class(class="form-select") }}
+        </div>
+
+        <!-- Date & Time -->
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold"><i class="fas fa-calendar-plus text-success"></i> Start Date & Time</label>
+            {{ form.start_datetime(class="form-control", type="datetime-local") }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold"><i class="fas fa-calendar-times text-danger"></i> End Date & Time</label>
+            {{ form.end_datetime(class="form-control", type="datetime-local") }}
+          </div>
+        </div>
+
+        <!-- Duration -->
+        <div class="mb-3">
+          <label class="form-label fw-bold"><i class="fas fa-stopwatch text-primary"></i> {{ form.duration.label }}</label>
+          {{ form.duration(class="form-select") }}
+        </div>
+
+        <!-- Attempts -->
+        <div class="mb-3">
+          <label class="form-label fw-bold"><i class="fas fa-redo-alt text-dark"></i> {{ form.attempts_allowed.label }}</label>
+          {{ form.attempts_allowed(class="form-control", type="number", min="1") }}
+        </div>
+
+        <!-- File Upload -->
+        <div class="mb-4">
+          <label for="content_file" class="form-label fw-bold"><i class="fas fa-file-upload text-info"></i> Upload File</label>
+          <div class="border p-3 rounded bg-light text-center" id="dropZone">
+            <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2"></i>
+            <p class="mb-1">Drag & drop your file here or click to upload</p>
+            <small class="text-muted">Supported: PDF, DOC, DOCX, TXT</small>
+            <input type="file" class="form-control mt-2" name="content_file" id="content_file" accept=".pdf,.doc,.docx,.txt">
+          </div>
+        </div>
+
+        <!-- Questions Accordion -->
+        <div class="card shadow-sm mb-4 border-0">
+          <div class="card-header bg-gradient text-white" style="background: linear-gradient(90deg, #1cc88a, #36b9cc);">
+            <i class="fas fa-tasks"></i> Quiz Questions
+          </div>
+          <div class="card-body">
+            <div class="accordion" id="questions-accordion"></div>
+            <button type="button" class="btn btn-outline-primary mt-2" onclick="addQuestion()">
+              <i class="fas fa-plus"></i> Add Question
+            </button>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex justify-content-between">
+          {{ form.submit(class="btn btn-success px-4") }}
+          <a href="{{ url_for('admin.manage_quizzes') }}" class="btn btn-outline-secondary px-4">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  .question-card { transition: all 0.3s ease-in-out; }
+  .question-card:hover { transform: scale(1.01); box-shadow: 0 0 10px rgba(0,0,0,0.15); }
+  #dropZone:hover { background: #f1f9ff; cursor: pointer; }
+</style>
+
+<script>
+  let questionCount = 0;
+  const optionCounters = {};
+  const labelStyles = { abc: ['a','b','c','d','e','f'], roman: ['i','ii','iii','iv','v','vi'] };
+
+  function updateCounter() {
+    document.getElementById("question-counter").textContent = "Questions: " + document.querySelectorAll('.accordion-item').length;
+  }
+
+  function addQuestion() {
+    const qIndex = questionCount++;
+    const container = document.getElementById('questions-accordion');
+    const cardHtml = `
+      <div class="accordion-item question-card" id="question-${qIndex}">
+        <h2 class="accordion-header" id="heading-${qIndex}">
+          <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse"
+                  data-bs-target="#collapse-${qIndex}" aria-expanded="false" aria-controls="collapse-${qIndex}">
+            Question ${qIndex + 1}
+          </button>
+        </h2>
+        <div id="collapse-${qIndex}" class="accordion-collapse collapse" aria-labelledby="heading-${qIndex}"
+             data-bs-parent="#questions-accordion">
+          <div class="accordion-body">
+            <textarea name="questions[${qIndex}][text]" class="form-control mb-3" placeholder="Enter question text" required></textarea>
+            <label class="form-label">Option Label Style</label>
+            <select class="form-select mb-2" name="questions[${qIndex}][label_style]" onchange="updateOptionLabels(${qIndex})">
+              <option value="abc">a, b, c, d</option>
+              <option value="roman">i, ii, iii, iv</option>
+            </select>
+            <div id="options-${qIndex}"></div>
+            <div class="mt-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="addOption(${qIndex})">+ Add Option</button>
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeOption(${qIndex})">− Remove Option</button>
+              <button type="button" class="btn btn-sm btn-danger float-end" onclick="removeQuestion(${qIndex})">Remove Question</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    container.insertAdjacentHTML('beforeend', cardHtml);
+    optionCounters[qIndex] = 0;
+    addOption(qIndex); addOption(qIndex);
+    updateCounter();
+  }
+
+  function removeQuestion(qIndex) {
+    const card = document.getElementById(`question-${qIndex}`);
+    if (card) card.remove();
+    updateCounter();
+  }
+
+  function addOption(qIndex) {
+    const oIndex = optionCounters[qIndex]++;
+    const style = document.querySelector(`#question-${qIndex} select`).value;
+    const label = labelStyles[style][oIndex] || `opt${oIndex+1}`;
+    const optionHtml = `
+      <div class="input-group mb-2" id="question-${qIndex}-option-${oIndex}">
+        <span class="input-group-text bg-light">${label}</span>
+        <input type="text" class="form-control" name="questions[${qIndex}][options][${oIndex}][text]" placeholder="Option text" required />
+        <span class="input-group-text bg-success text-white">
+          <input type="checkbox" class="form-check-input me-1" name="questions[${qIndex}][options][${oIndex}][is_correct]" />
+          ✔
+        </span>
+      </div>`;
+    document.getElementById(`options-${qIndex}`).insertAdjacentHTML('beforeend', optionHtml);
+  }
+
+  function removeOption(qIndex) {
+    const count = optionCounters[qIndex];
+    if (count > 0) {
+      optionCounters[qIndex]--;
+      document.getElementById(`question-${qIndex}-option-${count-1}`).remove();
+    }
+  }
+
+  function updateOptionLabels(qIndex) {
+    const style = document.querySelector(`#question-${qIndex} select`).value;
+    const groups = document.querySelectorAll(`#options-${qIndex} .input-group-text:first-child`);
+    groups.forEach((span, idx) => { span.textContent = labelStyles[style][idx] || `opt${idx+1}`; });
+  }
+</script>
+{% endblock %}
