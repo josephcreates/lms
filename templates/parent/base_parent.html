@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Parent Portal{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+  /* --- base sizing --- */
+  :root{
+  --navbar-height: 48px;
+  --sidebar-width: 220px;
+  --sidebar-collapsed: 70px;
+
+  /* LIGHt mode palette */
+  --bg: #f4f4f4;
+  --page: #ffffff;
+  --text: #222222;
+  --muted: #555555;
+  --navbar-bg: #5a189a;
+  --sidebar-bg: #7b2cbf;
+  --card-bg: #ffffff;
+  --card-border: rgba(0,0,0,0.04);
+  --link-accent: #7b2cbf;
+  --accent-left: #ffd700;
+  --icon-bg: #f3e8ff;
+}
+
+/* Dark theme variables — applied when body.dark-mode is present */
+body.dark-mode {
+  --bg: #0f1720;         /* page background around content */
+  --page: #0e1418;       /* card/background surfaces */
+  --text: #e6eef6;
+  --muted: #b6c0c8;
+  --navbar-bg: #15141a;
+  --sidebar-bg: #1e1524;
+  --card-bg: #111318;
+  --card-border: rgba(255,255,255,0.04);
+  --link-accent: #9b6df0;
+  --accent-left: #f7c948;
+  --icon-bg: #241832;
+}
+
+/* Base layout & sizing */
+html{font-size:100%}
+body{
+  margin:0;
+  padding-top: var(--navbar-height); /* keeps content below fixed navbar */
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height:1.35;
+}
+
+/* navbar uses variables */
+.navbar{
+  background-color: var(--navbar-bg);
+  height: var(--navbar-height);
+  min-height: var(--navbar-height);
+}
+
+/* Sidebar */
+.sidebar{
+  background: var(--sidebar-bg);
+  min-height:100vh;
+  position:fixed;
+  top:0;
+  left:0;
+  width:var(--sidebar-width);
+  padding-top: calc(var(--navbar-height) + 12px);
+  color: var(--page);
+  transition: width 280ms cubic-bezier(.2,.8,.2,1);
+  overflow-x:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+/* Collapsed state */
+.sidebar.collapsed{ width: var(--sidebar-collapsed); }
+.sidebar.collapsed a span,
+.sidebar.collapsed .sidebar-header span { display:none; }
+
+/* Links */
+.sidebar a{
+  color: rgba(240,217,255,0.95);
+  display:flex;
+  align-items:center;
+  padding:10px 16px;
+  text-decoration:none;
+  white-space:nowrap;
+  border-left:4px solid transparent;
+  transition: background 180ms, color 180ms;
+}
+.sidebar a i{ width:20px; text-align:center; }
+.sidebar a span{ margin-left:10px; }
+
+/* Hover / active */
+.sidebar a:hover{ background: rgba(255,255,255,0.06); color: #fff; }
+.sidebar a.active{
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-weight:600;
+  border-left:4px solid var(--accent-left);
+}
+
+/* Section header */
+.sidebar-header{
+  font-size:0.8rem; text-transform:uppercase; letter-spacing:.5px;
+  padding:12px 16px 6px; color: rgba(224,179,255,0.95); font-weight:600;
+}
+
+/* main content */
+.main-content{
+  margin-left: var(--sidebar-width);
+  padding: 12px 20px 32px;
+  transition: margin-left 280ms cubic-bezier(.2,.8,.2,1), padding 200ms;
+  min-height: calc(100vh - var(--navbar-height));
+  background: transparent;
+}
+
+/* collapsed main */
+.main-content.collapsed{ margin-left: var(--sidebar-collapsed); }
+
+/* cards, alerts, dropdowns use variables so they flip with theme */
+.card, .alert, .dropdown-menu {
+  background-color: var(--card-bg);
+  color: var(--text);
+  border-color: var(--card-border);
+  box-shadow: none;
+}
+
+/* text & small defaults */
+p, .card-text, small, .muted { color: var(--muted); }
+
+/* icon circle */
+.icon-circle{
+  width:52px; height:52px; display:flex; align-items:center; justify-content:center;
+  border-radius:50%;
+  background: var(--icon-bg);
+}
+.icon-circle i{ color: var(--link-accent); }
+
+/* gradient text preserved but uses accent variable */
+.text-gradient{
+  background: linear-gradient(45deg, var(--link-accent), #5a189a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-weight:600;
+}
+
+/* hover cards etc */
+.hover-card{ transition: transform .22s ease, box-shadow .22s ease; }
+.hover-card:hover{ transform: translateY(-4px); box-shadow: 0 10px 18px rgba(0,0,0,0.12); }
+
+/* alerts placement adjust on sidebar-collapsed using body class */
+.alert{ left: var(--sidebar-width); max-width: calc(100% - (var(--sidebar-width) + 20px)); position:relative; }
+body.sidebar-collapsed .alert{ left: var(--sidebar-collapsed); max-width: calc(100% - (var(--sidebar-collapsed) + 20px)); }
+
+/* small responsive tweaks */
+@media (max-width:576px){
+  .main-content{ margin-left: var(--sidebar-collapsed); padding:10px; }
+  .sidebar{ padding-top: calc(var(--navbar-height) + 8px); }
+}
+
+</style>
+
+</head>
+<body>
+
+  <!-- Top Navbar -->
+<nav class="navbar navbar-expand-lg fixed-top shadow">
+  <div class="container-fluid">
+    <button class="btn btn-sm btn-outline-light me-3" id="toggleSidebar" aria-controls="sidebar" aria-expanded="true" aria-label="Toggle sidebar"><i class="fas fa-bars"></i></button>
+    <a class="navbar-brand d-flex align-items-center text-white fw-bold" href="{{ url_for('parent.dashboard') }}">
+      <i class="fas fa-user-friends me-2"></i> Parent Panel
+    </a>
+
+    <ul class="navbar-nav ms-auto align-items-center">
+      <li class="nav-item me-2">
+        <button class="btn btn-sm btn-outline-light" id="toggleDarkMode"><i class="fas fa-moon"></i></button>
+      </li>
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" role="button" data-bs-toggle="dropdown">
+          <img src="{{ url_for('static', filename='uploads/profile_pictures/' ~ (current_user.profile_picture or 'default.png')) }}"
+               alt="Profile" class="rounded-circle" width="28" height="28">
+          &nbsp; {{ current_user.first_name }}
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end shadow">
+          <li><a class="dropdown-item" href="{{ url_for('parent.profile') }}"><i class="fas fa-user"></i> My Profile</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('parent.change_password') }}"><i class="fas fa-lock"></i> Change Password</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+  <!-- Sidebar -->
+<div class="sidebar" id="sidebar" role="navigation" aria-label="Parent sidebar">
+  <a href="{{ url_for('parent.dashboard') }}" class="{% if request.endpoint == 'parent.dashboard' %}active{% endif %}">
+  <i class="fas fa-home me-2"></i><span>Dashboard</span>
+</a>
+
+
+  <a href="{{ url_for('parent.view_children') }}" class="{% if request.endpoint == 'parent.view_children' %}active{% endif %}">
+    <i class="fas fa-child me-2"></i><span>My Children</span>
+  </a>
+
+  <a href="{{ url_for('parent.reports_list') }}" class="{% if request.endpoint == 'parent.reports_list' %}active{% endif %}">
+    <i class="fas fa-file-alt me-2"></i><span>Reports</span>
+  </a>
+
+  <!-- Sidebar or Navbar link -->
+<a href="{{ url_for('parent.notifications') }}" 
+   class="{% if request.endpoint == 'parent.notifications' %}active{% endif %}">
+  <i class="fas fa-bell me-2"></i>
+  <span>
+    Notifications
+    <span class="badge bg-danger ms-1" id="parent-unread-count" 
+          {% if unread_count == 0 %}style="display:none;"{% endif %}>
+      {{ unread_count }}
+    </span>
+  </span>
+</a>
+
+  <!-- Fees Payment Header (not a clickable link) -->
+  <div class="sidebar-header">
+  <i class="fas fa-money-check-alt me-2"></i><span>Fees Payment</span>
+</div>
+{% if current_user.children %}
+  {% for child in current_user.children %}
+    {% set active_child_id = request.view_args.student_id if request.view_args is defined and request.view_args else None %}
+    <a href="{{ url_for('parent.parent_pay_fees', student_id=child.id) }}"
+       class="child-link {% if request.endpoint == 'parent.parent_pay_fees' and active_child_id == (child.id|string) %}active{% endif %}">
+      <i class="fas fa-user"></i><span>{{ child.first_name }}</span>
+    </a>
+  {% endfor %}
+{% else %}
+  <div class="px-3 text-muted small">No children linked</div>
+{% endif %}
+
+</div>
+
+  <!-- Main Content -->
+  <div class="main-content mt-5" id="mainContent">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" id="alertBox">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  const sidebar = document.getElementById('sidebar');
+  const mainContent = document.getElementById('mainContent');
+  const alertBox = document.getElementById('alertBox');
+  const toggleBtn = document.getElementById('toggleSidebar');
+  const toggleDarkModeBtn = document.getElementById('toggleDarkMode');
+  const toggleDarkModeIcon = toggleDarkModeBtn ? toggleDarkModeBtn.querySelector('i') : null;
+  const badge = document.getElementById("parent-unread-count");
+
+  // Guard: required elements
+  if (!sidebar || !mainContent) {
+    console.warn('Sidebar or mainContent not found.');
+    return;
+  }
+
+  // Restore saved sidebar state
+  const savedCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+  if (savedCollapsed) {
+    sidebar.classList.add('collapsed');
+    mainContent.classList.add('collapsed');
+    document.body.classList.add('sidebar-collapsed');
+    if (alertBox) alertBox.classList.add('collapsed');
+    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'false');
+  } else {
+    if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
+  }
+
+  // Attach toggle handler (safe check)
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', function () {
+      const isNowCollapsed = sidebar.classList.toggle('collapsed');
+      mainContent.classList.toggle('collapsed');
+      document.body.classList.toggle('sidebar-collapsed', isNowCollapsed);
+      if (alertBox) alertBox.classList.toggle('collapsed');
+
+      // accessibility + persistence
+      toggleBtn.setAttribute('aria-expanded', String(!isNowCollapsed));
+      localStorage.setItem('sidebarCollapsed', isNowCollapsed);
+    });
+  } else {
+    console.warn('toggleSidebar button not found (expected id="toggleSidebar")');
+  }
+
+  // Dark mode toggle (moved inside DOMContentLoaded)
+  function enableDarkMode() {
+    document.body.classList.add('dark-mode');
+    document.querySelectorAll('.navbar, .sidebar, .main-content, .card, .alert, .dropdown-menu')
+      .forEach(el => el && el.classList.add('dark-mode'));
+    localStorage.setItem('darkMode', 'enabled');
+  }
+  function disableDarkMode() {
+    document.body.classList.remove('dark-mode');
+    document.querySelectorAll('.navbar, .sidebar, .main-content, .card, .alert, .dropdown-menu')
+      .forEach(el => el && el.classList.remove('dark-mode'));
+    localStorage.setItem('darkMode', 'disabled');
+  }
+  if (localStorage.getItem('darkMode') === 'enabled') enableDarkMode();
+  if (toggleDarkMode) toggleDarkMode.addEventListener('click', () => {
+    if (document.body.classList.contains('dark-mode')) disableDarkMode();
+    else enableDarkMode();
+  });
+
+  // Unread notifications poll (kept from your code)
+  async function updateUnreadCount() {
+    try {
+      const res = await fetch("{{ url_for('parent.get_unread_count') }}");
+      if (!res.ok) throw new Error('Network error');
+      const data = await res.json();
+      if (badge) {
+        if (data.unread_count > 0) {
+          badge.textContent = data.unread_count;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    } catch (err) {
+      // silently fail (console helps debugging)
+      console.error('Error updating unread count:', err);
+    }
+  }
+  updateUnreadCount();
+  setInterval(updateUnreadCount, 15000);
+});
+</script>
+</body>
+</html>
