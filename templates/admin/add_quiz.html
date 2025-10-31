@@ -16,11 +16,11 @@
       <form method="POST" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
 
-        <!-- Subject -->
-        <div class="mb-3">
-          <label class="form-label fw-bold"><i class="fas fa-book text-info"></i> {{ form.subject.label }}</label>
-          {{ form.subject(class="form-control", placeholder="Enter subject") }}
-        </div>
+        <!-- Class -->
+<div class="mb-3">
+  <label class="form-label fw-bold"><i class="fas fa-users text-warning"></i> {{ form.assigned_class.label }}</label>
+  {{ form.assigned_class(class="form-select", id="assigned_class") }}
+</div>
 
         <!-- Title -->
         <div class="mb-3">
@@ -28,11 +28,11 @@
           {{ form.title(class="form-control", placeholder="Quiz title") }}
         </div>
 
-        <!-- Class -->
-        <div class="mb-3">
-          <label class="form-label fw-bold"><i class="fas fa-users text-warning"></i> {{ form.assigned_class.label }}</label>
-          {{ form.assigned_class(class="form-select") }}
-        </div>
+        <!-- Subject / Course -->
+<div class="mb-3">
+  <label class="form-label fw-bold"><i class="fas fa-book text-info"></i> {{ form.course_name.label }}</label>
+  {{ form.course_name(class="form-select", id="course_name") }}
+</div>
 
         <!-- Date & Time -->
         <div class="row">
@@ -177,5 +177,21 @@
     const groups = document.querySelectorAll(`#options-${qIndex} .input-group-text:first-child`);
     groups.forEach((span, idx) => { span.textContent = labelStyles[style][idx] || `opt${idx+1}`; });
   }
+
+  document.getElementById('assigned_class').addEventListener('change', function() {
+    const assignedClass = this.value;
+    fetch(`/admin/get_courses/${encodeURIComponent(assignedClass)}`)
+      .then(response => response.json())
+      .then(data => {
+          const select = document.getElementById('course_name');
+          select.innerHTML = '';
+          data.forEach(c => {
+              const opt = document.createElement('option');
+              opt.value = c.name;
+              opt.text = c.name;
+              select.appendChild(opt);
+          });
+      });
+});
 </script>
 {% endblock %}
