@@ -132,16 +132,22 @@
     {% if groups is defined %}
       {% if groups %}
         {% for g in groups %}
-          {% set group_id = loop.index + ((page-1) * per_page) %}
+          {# safe defaults in case pagination vars aren't provided by the view #}
+          {% set page_num = page|default(1) %}
+          {% set per_page_num = per_page|default(groups|length) %}
+          {% set group_id = loop.index + ((page_num - 1) * per_page_num) %}
           <div class="accordion-item mb-3 fee-group" data-class="{{ g.class_level }}" data-year="{{ g.year }}" data-semester="{{ g.semester }}">
             <h2 class="accordion-header" id="heading{{ group_id }}">
               <button class="accordion-button collapsed py-2 small" type="button"
                       data-bs-toggle="collapse" data-bs-target="#collapse{{ group_id }}" aria-expanded="false"
                       aria-controls="collapse{{ group_id }}">
                 <div class="d-flex justify-content-between w-100 align-items-center">
-                  <div class="fw-semibold">{{ g.class_level }} • {{ g.year }} • {{ g.semester }} Sem</div>
-                  <div class="small text-muted">Total: GHS <strong class="text-dark">{{ "%.2f"|format(g.total) }}</strong> • {{ g.fees|length }} item(s)</div>
-                </div>
+                        <div class="fw-semibold">{{ g.class_level }} • {{ g.year }} • {{ g.semester }} Sem</div>
+                        {# Normalize: support both old dict-shape (g.fees, g.total) and model-shape (items_list, amount) #}
+                        {% set fees_list = g.fees if g.fees is defined else (g.items_list if g.items_list is defined else []) %}
+                        {% set group_total = g.total if g.total is defined else (g.amount if g.amount is defined else (fees_list|sum(attribute='amount') if fees_list else 0)) %}
+                        <div class="small text-muted">Total: GHS <strong class="text-dark">{{ "%.2f"|format(group_total) }}</strong> • {{ fees_list|length }} item(s)</div>
+                      </div>
               </button>
             </h2>
 
@@ -157,13 +163,18 @@
                       </tr>
                     </thead>
                     <tbody>
-                      {% for fee in g.fees %}
+                      {% for fee in fees_list %}
                         <tr class="align-middle small">
-                          <td class="text-truncate" style="max-width:420px;" title="{{ fee.description }}">
-                            <span class="badge bg-info text-dark px-2 py-1">{{ fee.description }}</span>
+                          {# description might be attribute or key depending on shape #}
+                          {% set desc = fee.description if fee.description is defined else (fee['description'] if fee['description'] is defined else '') %}
+                          {% set amt = fee.amount if fee.amount is defined else (fee['amount'] if fee['amount'] is defined else 0) %}
+                          <td class="text-truncate" style="max-width:420px;" title="{{ desc }}">
+                            <span class="badge bg-info text-dark px-2 py-1">{{ desc }}</span>
                           </td>
-                          <td class="text-end"><strong>{{ "{:,.2f}".format(fee.amount) }}</strong></td>
+                          <td class="text-end"><strong>{{ "{:,.2f}".format(amt) }}</strong></td>
                           <td class="text-end">
+                            {# edit/delete only available when fee has an id (DB row) #}
+                            {% if fee.id is defined %}
                             <a href="{{ url_for('admin.edit_fee', fee_id=fee.id) }}" class="btn btn-sm btn-outline-warning me-1" title="Edit">
                               <i class="fas fa-edit"></i>
                             </a>
@@ -173,6 +184,7 @@
                                 <i class="fas fa-trash"></i>
                               </button>
                             </form>
+                            {% endif %}
                           </td>
                         </tr>
                       {% endfor %}
@@ -180,7 +192,7 @@
                     <tfoot class="small">
                       <tr>
                         <td class="text-end"><strong>Group total</strong></td>
-                        <td class="text-end"><strong>GHS {{ "%.2f"|format(g.total) }}</strong></td>
+                        <td class="text-end"><strong>GHS {{ "%.2f"|format(group_total) }}</strong></td>
                         <td></td>
                       </tr>
                     </tfoot>
@@ -191,8 +203,10 @@
           </div>
         {% endfor %}
 
-        <!-- Pagination controls (server-side) -->
-        <nav aria-label="Assigned fees pages" class="mt-2">
+  {# Only render pagination controls when the view provided pagination vars #}
+  {% if page is defined and total_pages is defined and per_page is defined and total_groups is defined %}
+  <!-- Pagination controls (server-side) -->
+  <nav aria-label="Assigned fees pages" class="mt-2">
           <ul class="pagination pagination-sm">
             <li class="page-item {% if page <= 1 %}disabled{% endif %}">
               <a class="page-link" href="{{ url_for('admin.assign_fees', page=page-1, per_page=per_page) }}" aria-label="Previous">&laquo;</a>
@@ -223,6 +237,7 @@
           </ul>
           <div class="small text-muted">Page {{ page }} of {{ total_pages }} — {{ total_groups }} groups</div>
         </nav>
+        {% endif %}
 
       {% else %}
         <div class="text-muted small">No assigned fees yet.</div>
