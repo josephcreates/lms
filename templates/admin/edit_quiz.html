@@ -12,8 +12,8 @@
         {{ form.hidden_tag() }}
 
         <div class="mb-3">
-          {{ form.subject.label(class="form-label") }}
-          {{ form.subject(class="form-control") }}
+          {{ form.course_name.label(class="form-label") }}
+          {{ form.course_name(class="form-control") }}
         </div>
 
         <div class="mb-3">
@@ -85,6 +85,13 @@
     const cardHtml = `
       <div class="card mb-3 shadow-sm border border-info" id="question-${qIndex}">
         <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">Question ${qIndex + 1}</h6>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion(${qIndex})">
+              🗑 Remove Question
+            </button>
+          </div>
+
           <div class="mb-3">
             <label class="form-label" for="question-text-${qIndex}">Question</label>
             <textarea
@@ -94,6 +101,7 @@
               required
             >${data.text || ''}</textarea>
           </div>
+
           <div class="mb-3">
             <label class="form-label" for="label-style-${qIndex}">Option Label Style</label>
             <select
@@ -106,14 +114,21 @@
               <option value="roman" ${labelStyle === 'roman' ? 'selected' : ''}>i, ii, iii, iv</option>
             </select>
           </div>
+
           <div class="option-container" id="options-${qIndex}"></div>
+
           <div class="mt-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="addOption(${qIndex})">+ Add Option</button>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeOption(${qIndex})">− Remove Option</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary me-1" onclick="addOption(${qIndex})">
+              + Add Option
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeOption(${qIndex})">
+              − Remove Option
+            </button>
           </div>
         </div>
       </div>
     `;
+
     container.insertAdjacentHTML('beforeend', cardHtml);
     optionCounters[qIndex] = 0;
 
@@ -132,7 +147,6 @@
     const styleSelect = document.getElementById(`label-style-${qIndex}`);
     const style = styleSelect ? styleSelect.value : 'abc';
     const label = labelStyles[style][oIndex] || `opt${oIndex + 1}`;
-
     const checked = isCorrect ? 'checked' : '';
 
     const optionHtml = `
@@ -177,9 +191,28 @@
     });
   }
 
-  // Initialize questions
+  // ✅ Add Question button
+  function addQuestion() {
+    const newQ = { text: '', label_style: 'abc', options: [] };
+    addQuestionFromData(newQ, questionCount);
+    const newCard = document.getElementById(`question-${questionCount}`);
+    if (newCard) newCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    questionCount++;
+  }
+
+  // ✅ Remove Question
+  function removeQuestion(qIndex) {
+    const questionDiv = document.getElementById(`question-${qIndex}`);
+    if (questionDiv) {
+      questionDiv.remove();
+      delete optionCounters[qIndex];
+    }
+  }
+
+  // Initialize existing quiz questions
   quizQuestions.forEach((q, i) => {
     addQuestionFromData(q, i);
   });
 </script>
+
 {% endblock %}
